@@ -1,4 +1,4 @@
-# Defects# Surface Defect Detection based on SSD Detector and Siamese Networks
+# Surface Defect Detection based on SSD Detector and Siamese Networks
 
 ## Overview
 This project introduces an algorithm for zero-shot and few-shot surface defect detection, addressing the challenge of constructing a robust surface defect detector dealing with limited data cases. By combining the strengths of the SSD detector and Siamese neural networks, our approach efficiently detects defects on solid surfaces. 
