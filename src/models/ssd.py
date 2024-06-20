@@ -413,6 +413,7 @@ class SSD300(nn.Module):
 
         return all_images_boxes, all_images_labels, all_images_scores  # lists of length batch_size
 
+
 class MultiBoxLoss(nn.Module):
     """
     The MultiBox loss, a loss function for object detection.
@@ -531,4 +532,3 @@ class MultiBoxLoss(nn.Module):
         # TOTAL LOSS
 
         return conf_loss + self.alpha * loc_loss
-
