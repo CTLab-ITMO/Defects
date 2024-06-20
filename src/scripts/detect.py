@@ -1,4 +1,5 @@
 from torchvision import transforms
+from tqdm import tqdm
 from src.utils import *
 from PIL import Image, ImageDraw, ImageFont
 
@@ -67,41 +68,43 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     # Annotate
     annotated_image = original_image
     draw = ImageDraw.Draw(annotated_image)
-    font = ImageFont.load_default()
-    # font = ImageFont.truetype("./arial.ttf", 15)
 
-    # Suppress specific classes, if needed
+    font = ImageFont.truetype("./arial.ttf", original_image.height // 50)
+
     for i in range(det_boxes.size(0)):
         if suppress is not None:
             if det_labels[i] in suppress:
                 continue
 
-        # Boxes
-        box_location = det_boxes[i].tolist()
-        draw.rectangle(xy=box_location, outline=label_color_map[det_labels[i]])
-        draw.rectangle(xy=[l + 1. for l in box_location], outline=label_color_map[
-            det_labels[i]])  # a second rectangle at an offset of 1 pixel to increase line thickness
-        # draw.rectangle(xy=[l + 2. for l in box_location], outline=label_color_map[
-        #     det_labels[i]])  # a third rectangle at an offset of 1 pixel to increase line thickness
-        # draw.rectangle(xy=[l + 3. for l in box_location], outline=label_color_map[
-        #     det_labels[i]])  # a fourth rectangle at an offset of 1 pixel to increase line thickness
+        left, top, right, bottom = det_boxes[i].tolist()
+        label_color = label_color_map[det_labels[i]]
+        draw.rectangle(((left, top), (right, bottom)), outline=label_color, width=4)
 
-        # Text
-        text_size = font.getsize(det_labels[i].upper())
-        text_location = [box_location[0] + 2., box_location[1] - text_size[1]]
-        textbox_location = [box_location[0], box_location[1] - text_size[1], box_location[0] + text_size[0] + 4.,
-                            box_location[1]]
-        draw.rectangle(xy=textbox_location, fill=label_color_map[det_labels[i]])
-        draw.text(xy=text_location, text=det_labels[i].upper(), fill='white',
-                  font=font)
+        text_location = (left + 5, top - 25)
+        label_text = det_labels[i].upper()
+        text = '{0} {1:.2f}'.format(label_text, det_scores[0][i])
+
+        left, top, right, bottom = draw.textbbox(text_location, text, font=font)
+        draw.rectangle((left - 5, top - 5, right + 5, bottom + 5), fill=label_color)
+        draw.text(text_location, text, font=font, fill="white")
+
     del draw
 
     return annotated_image
 
 
+def process_images(input_folder, output_folder, min_score=0.6, max_overlap=0.2, top_k=200):
+    os.makedirs(output_folder, exist_ok=True)
+    for filename in tqdm(os.listdir(input_folder)):
+        if filename.endswith(".png") or filename.endswith(".jpg"):
+            img_path = os.path.join(input_folder, filename)
+            original_image = Image.open(img_path).convert('RGB')
+            annotated_image = detect(original_image, min_score, max_overlap, top_k)
+            output_path = os.path.join(output_folder, filename)
+            annotated_image.save(output_path)
+
+
 if __name__ == '__main__':
-    img_path = '../../data/NEU_DET/train/crazing_1.jpg'
-    original_image = Image.open(img_path, mode='r')
-    original_image = original_image.convert('RGB')
-    annotated_image = detect(original_image, min_score=0.2, max_overlap=0.5, top_k=200)
-    annotated_image.save("./result.jpg")
+    input_folder = '../../data/MVTec/leather/train/'
+    output_folder = '../../data/MVTec/leather/results/'
+    process_images(input_folder, output_folder)
