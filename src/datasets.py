@@ -1,9 +1,8 @@
 import torch
 from torch.utils.data import Dataset
-import json
 import os
 from PIL import Image
-from src.utils import transform
+from src.utils import transform, label_map
 
 
 class DefectsDataset(Dataset):
@@ -18,19 +17,48 @@ class DefectsDataset(Dataset):
         :param keep_difficult: keep or discard objects that are considered difficult to detect?
         """
         self.split = split.upper()
-
-        assert self.split in {'TRAIN', 'TEST'}
+        assert self.split in {'TRAIN', 'TEST', 'TEMPLATES'}
 
         self.data_folder = data_folder
         self.keep_difficult = keep_difficult
 
-        # Read data files
-        with open(os.path.join(data_folder, self.split + '_images.json'), 'r') as j:
-            self.images = json.load(j)
-        with open(os.path.join(data_folder, self.split + '_objects.json'), 'r') as j:
-            self.objects = json.load(j)
+        self.images = []
+        self.objects = []
 
-        assert len(self.images) == len(self.objects)
+        # Iterate through each dataset folder
+        # for dataset_folder in os.listdir(data_folder):
+        # dataset_path = os.path.join(data_folder, dataset_folder)
+        dataset_path = data_folder
+        if os.path.isdir(dataset_path):
+            bbox_folder = os.path.join(dataset_path, 'bboxes')
+            train_folder = os.path.join(dataset_path, 'train')
+
+            for bbox_file in os.listdir(bbox_folder):
+                if bbox_file.endswith('.txt'):
+                    image_file = os.path.join(train_folder, bbox_file.replace('.txt', '.jpg'))
+                    if not os.path.isfile(image_file):
+                        image_file = os.path.join(train_folder, bbox_file.replace('.txt', '.png'))
+                    if not os.path.isfile(image_file):
+                        image_file = os.path.join(train_folder, bbox_file.replace('.txt', '.bmp'))
+
+                    if os.path.isfile(image_file):
+                        self.images.append(image_file)
+                        self.objects.append(self.parse_annotation(os.path.join(bbox_folder, bbox_file)))
+
+    def parse_annotation(self, annotation_path):
+        boxes = []
+        labels = []
+        difficulties = []
+        with open(annotation_path, 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                parts = line.strip().split()
+                class_name = parts[0]
+                x1, y1, x2, y2 = map(int, parts[1:])
+                boxes.append([x1, y1, x2, y2])
+                labels.append(label_map[class_name])
+                difficulties.append(0)  # Assuming difficulties are not specified in the provided format
+        return {'boxes': boxes, 'labels': labels, 'difficulties': difficulties}
 
     def __getitem__(self, i):
         # Read image
@@ -82,5 +110,4 @@ class DefectsDataset(Dataset):
             difficulties.append(b[3])
 
         images = torch.stack(images, dim=0)
-
         return images, boxes, labels, difficulties  # tensor (N, 3, 300, 300), 3 lists of N tensors each
