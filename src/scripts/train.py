@@ -18,7 +18,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Learning parameters
 checkpoint = None  # path to model checkpoint, None if none
 batch_size = 2  # batch size
-iterations = 9200  # 120000  # number of iterations to train
+iterations = 4000  # 120000  # number of iterations to train
 workers = 1  # number of workers for loading data in the DataLoader
 print_freq = 200  # print training status every __ batches
 lr = 1e-4  # learning rate
@@ -90,13 +90,13 @@ def main():
               model=model,
               criterion=criterion,
               optimizer=optimizer,
-              epoch=epoch)
+              epoch=epoch, epoch_max=epochs)
 
         # Save checkpoint
         save_checkpoint(epoch, model, optimizer)
 
 
-def train(train_loader, model, criterion, optimizer, epoch):
+def train(train_loader, model, criterion, optimizer, epoch, epoch_max):
     """
     One epoch's training.
 
@@ -147,10 +147,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
         # Print status
         if i % print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+            print('Epoch: [{0}/{1}]\t'
+                  'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t' 
                   'Data Time {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, i, len(train_loader),
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, epoch_max,
                                                                   batch_time=batch_time,
                                                                   data_time=data_time, loss=losses))
     del predicted_locs, predicted_scores, images, boxes, labels  # free some memory since their histories may be stored

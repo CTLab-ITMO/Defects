@@ -8,7 +8,7 @@ from src.utils import rev_label_map, label_color_map
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load model checkpoint
-checkpoint = '../../weights/checkpoint_ssd300.pth.tar'
+checkpoint = 'checkpoint_ssd300.pth.tar'
 checkpoint = torch.load(checkpoint)
 start_epoch = checkpoint['epoch'] + 1
 print('\nLoaded checkpoint from epoch %d.\n' % start_epoch)
@@ -93,7 +93,7 @@ def detect(original_image, min_score, max_overlap, top_k, suppress=None):
     return annotated_image
 
 
-def process_images(input_folder, output_folder, min_score=0.6, max_overlap=0.2, top_k=200):
+def process_images(input_folder, output_folder, min_score=0.4, max_overlap=0.2, top_k=5):
     os.makedirs(output_folder, exist_ok=True)
     for filename in tqdm(os.listdir(input_folder)):
         if filename.endswith(".png") or filename.endswith(".jpg"):
